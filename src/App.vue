@@ -10,21 +10,12 @@ interface User {
   id: string
 }
 
-const userMap = (raw: UserResponse):User => ( {id: raw.ID});
+const userMap = (raw: any) => ( {id: raw.ID as string});
 
 
 const getUsers = async () => {
-    const data = await apiClient.get<User>('todos/1', {}, {
-    convert: (raw: UserResponse) => ({id: raw.ID})
-  });
-
-  const data2 = await apiClient.get('todos/1', {}, {
-    convert: userMap,
-  });
-
-    const data3 = await apiClient.get('todos2/1', {}, {
-      convert: (raw: UserResponse) => ({id: raw.ID})
-  });
+    const data = await apiClient.get<UserResponse>('todos/1');
+    const user = userMap(data);
 }
 
 onMounted(  ()=>{
