@@ -11,12 +11,12 @@ const kyClient = ky.create({
 
 type RequestOptions = {
     transformData?: (raw: any) => any;
-    transformError?: (msg: string) => string;
+    transformError?: (raw: any) => any;
 };
 
 export type Result<T> = {
     data: T | null;
-    error: string | null;
+    error: T | null;
 };
 
 export class ApiClient {
@@ -40,13 +40,12 @@ export class ApiClient {
 
             return { data: raw as T, error: null };
         } catch (e: any) {
-            let msg = e?.message ?? "Unknown error";
 
             if (options?.transformError) {
-                msg = options.transformError(msg);
+                e = options.transformError(e);
             }
 
-            return { data: null, error: msg };
+            return { data: null, error: e };
         }
     }
 
