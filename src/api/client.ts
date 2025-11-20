@@ -1,4 +1,4 @@
-import ky from 'ky';
+import ky, { HTTPError } from 'ky';
 import type { KyInstance } from 'ky';
 
 const kyClient = ky.create({
@@ -8,86 +8,66 @@ const kyClient = ky.create({
     },
 });
 
-
-type RequestOptions = {
-    transformData?: (raw: any) => any;
-    transformError?: (raw: any) => any;
-};
-
-export type Result<T> = {
-    data: T | null;
-    error: T | null;
-};
-
-export class ApiClient {
-    private client: KyInstance;
-
-    constructor(client: KyInstance) {
-        this.client = client;
-    }
-
-    private async exec<T>(
-        promise: Promise<Response>,
-        options?: RequestOptions
-    ): Promise<Result<T>> {
-        try {
-            const res = await promise;
-            let raw = await res.json();
-
-            if (options?.transformData) {
-                raw = options.transformData(raw);
-            }
-
-            return { data: raw as T, error: null };
-        } catch (e: any) {
-
-            if (options?.transformError) {
-                e = options.transformError(e);
-            }
-
-            return { data: null, error: e };
-        }
-    }
-
-    get<T>(url: string, params?: Record<string, any>, options?: RequestOptions) {
-        return this.exec<T>(this.client.get(url, { searchParams: params }), options);
-    }
-
-    post<T>(url: string, body?: any, options?: RequestOptions) {
-        return this.exec<T>(this.client.post(url, { json: body }), options);
-    }
-
-    put<T>(url: string, body?: any, options?: RequestOptions) {
-        return this.exec<T>(this.client.put(url, { json: body }), options);
-    }
-
-    patch<T>(url: string, body?: any, options?: RequestOptions) {
-        return this.exec<T>(this.client.patch(url, { json: body }), options);
-    }
-
-    delete<T>(url: string, options?: RequestOptions) {
-        return this.exec<T>(this.client.delete(url), options);
-    }
-
-    upload<T>(
-        url: string,
-        file: File | Blob,
-        fieldName = "file",
-        extra?: Record<string, any>,
-        options?: RequestOptions
-    ) {
-        const fd = new FormData();
-        fd.append(fieldName, file);
-
-        if (extra) {
-            for (const [k, v] of Object.entries(extra)) {
-                fd.append(k, v as any);
-            }
-        }
-
-        return this.exec<T>(this.client.post(url, { body: fd }), options);
-    }
+export interface RequestOptions<TOut> {
+    convert?: (raw: any) => TOut;
 }
 
+export interface Result<T> {
+    data: T | null;
+    error: unknown;
+}
+
+export class ApiClient {
+    constructor(private client: KyInstance) { }
+
+    private async exec<TOut>(
+        request: Promise<Response>,
+        options?: RequestOptions<TOut>
+    ): Promise<Result<TOut>> {
+        try {
+            const response = await request;
+            const raw = await response.json();
+
+            const data = options?.convert
+                ? options.convert(raw)
+                : raw;
+
+            return { data: data as TOut, error: null };
+
+        } catch (error) {
+            return {
+                data: null,
+                error
+            };
+        }
+    }
+
+    get<TOut = unknown>(
+        url: string,
+        params?: Record<string, any>,
+        options?: RequestOptions<TOut>
+    ) {
+        return this.exec<TOut>(
+            this.client.get(url, { searchParams: params }),
+            options
+        );
+    }
+
+    post<TOut = unknown>(url: string, body?: any, options?: RequestOptions<TOut>) {
+        return this.exec<TOut>(this.client.post(url, { json: body }), options);
+    }
+
+    put<TOut = unknown>(url: string, body?: any, options?: RequestOptions<TOut>) {
+        return this.exec<TOut>(this.client.put(url, { json: body }), options);
+    }
+
+    patch<TOut = unknown>(url: string, body?: any, options?: RequestOptions<TOut>) {
+        return this.exec<TOut>(this.client.patch(url, { json: body }), options);
+    }
+
+    delete<TOut = unknown>(url: string, options?: RequestOptions<TOut>) {
+        return this.exec<TOut>(this.client.delete(url), options);
+    }
+}
 
 export const apiClient = new ApiClient(kyClient);
