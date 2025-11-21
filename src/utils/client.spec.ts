@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { apiClient } from '@/api/client';
+import { apiClient } from '@/utils/client';
 
 // 🔥 Укажи свой URL который точно существует
 
