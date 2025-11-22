@@ -17,9 +17,7 @@ onMounted(()=> {
 <template>
   <h1>You did it!</h1>
   <div>{{ loading }}</div>
-    <div v-if="error">
-    {{ JSON.stringify(error) }}
-  </div>
+
   <div v-if="post">
     {{ JSON.stringify(post) }}
   </div>
