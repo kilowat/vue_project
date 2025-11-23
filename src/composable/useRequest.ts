@@ -1,5 +1,5 @@
 import { ref, computed, onScopeDispose } from "vue"
-import { AppError, toAppError } from "@/errors/AppError"
+import { AppError } from "@/errors/AppError"
 
 export type RequestStatus =
     | "initial"
@@ -41,20 +41,27 @@ export function useRequest<F extends (...args: any[]) => Promise<any>>(
 
 
     const execute = async (...args: Parameters<F>) => {
-        if (isLoading) return;
+        if (isLoading.value) return;
 
         status.value = "loading"
         error.value = null
 
         try {
             const result = await fn(...args)
+
             data.value = result
             for (const cb of onSuccessListeners) cb(result)
             return result
         } catch (e) {
-            error.value = toAppError(e)
-            status.value = "error"
-            for (const cb of onErrorListeners) cb(error.value)
+            if (e instanceof AppError) {
+                error.value = e;
+                status.value = "error"
+                for (const cb of onErrorListeners) cb(error.value)
+            } else {
+                throw e;
+            }
+
+
         } finally {
             status.value = "ready";
         }

@@ -4,14 +4,19 @@ import { computed, onMounted, ref, watch, watchEffect } from 'vue';
 import * as postAPI from '@/api/post';
 import { useRequest } from '@/composable/useRequest';
 
+
 const { 
   data: post, 
   isLoading, 
   execute: fetchPost,
+  error,
   onError
 } = useRequest(postAPI.getPost);
 
+//onError((error)=>{ console.log(error) })
+
 onMounted(()=> {
+
   fetchPost();
 })
 
@@ -19,6 +24,7 @@ onMounted(()=> {
 
 <template>
   <h1>You did it!</h1>
+  {{ error?.message}}
   <div v-if="isLoading">...Загрузка</div>
 
   <div v-if="post">

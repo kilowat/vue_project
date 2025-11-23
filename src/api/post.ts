@@ -1,4 +1,5 @@
-import { AppError, toAppError } from "@/errors/AppError";
+import { AppError } from "@/errors/AppError";
+import { CustomException } from "@/errors/CustomException";
 import type { Post } from "@/types/post";
 import { apiClient } from "@/utils/client";
 
@@ -6,10 +7,19 @@ interface PostResponse {
     id: string
 }
 
-export const getPost = async () => {
-    const data = await apiClient.get<PostResponse>('todos/122');
-    return postMapper.fromResponse(data);
+class PostException extends CustomException {
+    getMessage(): string {
+        return "Post error";
+    }
+}
 
+export const getPost = async () => {
+    try {
+        const data = await apiClient.get<PostResponse>('todos/122');
+        return postMapper.fromResponse(data);
+    } catch (e) {
+        AppError.throw(new PostException(e));
+    }
 }
 
 
@@ -18,5 +28,5 @@ export const createPost = async (title: string) => {
 }
 
 export const postMapper = {
-    fromResponse: (raw: PostResponse): Post => ({ id: raw.id }),
+    fromResponse: (raw: any): Post => ({ id: raw.test.id }),
 };

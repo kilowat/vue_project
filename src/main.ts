@@ -10,11 +10,11 @@ const app = createApp(App)
 // Глобальный обработчик ошибок
 // ----------------------------
 window.addEventListener('error', (event) => {
-    console.error('Global error:', event.error)
+    //console.error('Global error:', event.error)
 })
 
 window.addEventListener('unhandledrejection', (event) => {
-    console.error('Promise error:', event.reason)
+    //console.error('Promise error:', event.reason)
 })
 
 // ----------------------------
