@@ -58,7 +58,7 @@ export class AppError extends Error {
         }
 
         // Логируем оригинальную ошибку
-        logError(original);
+        logError(error);
 
         // Бросаем AppError
         throw new AppError(message, original);
