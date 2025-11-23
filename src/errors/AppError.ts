@@ -1,10 +1,9 @@
 import { ApiClientError } from "@/utils/client";
 
-export class AppError<T = unknown> extends Error {
+export class AppError extends Error {
     constructor(
         message: string,
         public readonly original: unknown,
-        public readonly data?: T
     ) {
         super(message);
         this.name = 'AppError';
@@ -13,7 +12,7 @@ export class AppError<T = unknown> extends Error {
 
 export function toAppError(error: unknown): AppError {
     if (error instanceof ApiClientError) {
-        return new AppError(error.message, error);
+        return new AppError(error.message, error.original);
     }
     // Здесь через if можно будет разные сообщение замутить
     return new AppError('Произошла непредвиденная ошибка.', error);

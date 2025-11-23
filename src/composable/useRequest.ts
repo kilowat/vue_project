@@ -1,7 +1,11 @@
-
+import { ref, computed, onScopeDispose } from "vue"
 import { AppError, toAppError } from "@/errors/AppError"
-import { ref } from "vue"
 
+export type RequestStatus =
+    | "initial"
+    | "loading"
+    | "ready"
+    | "error"
 
 export function useRequest<F extends (...args: any[]) => Promise<any>>(
     fn: F,
@@ -9,22 +13,62 @@ export function useRequest<F extends (...args: any[]) => Promise<any>>(
     type Result = Awaited<ReturnType<F>>
 
     const data = ref<Result | null>(null)
-    const loading = ref(false)
+    const status = ref<RequestStatus>("initial")
     const error = ref<AppError | null>(null)
 
+    const isLoading = computed(() => status.value === "loading")
+    const isError = computed(() => status.value === "error")
+    const isReady = computed(() => status.value === "ready")
+
+    const onSuccessListeners = new Set<(data: Result) => void>()
+    const onErrorListeners = new Set<(err: AppError) => void>()
+
+    function onSuccess(cb: (data: Result) => void) {
+        onSuccessListeners.add(cb)
+        const unsubscribe = () => onSuccessListeners.delete(cb)
+        onScopeDispose(unsubscribe)
+
+        return unsubscribe
+    }
+
+    function onError(cb: (err: AppError) => void) {
+        onErrorListeners.add(cb)
+        const unsubscribe = () => onErrorListeners.delete(cb)
+        onScopeDispose(unsubscribe)
+
+        return unsubscribe
+    }
+
+
     const execute = async (...args: Parameters<F>) => {
-        loading.value = true
+        if (isLoading) return;
+
+        status.value = "loading"
         error.value = null
+
         try {
-            const result = await fn(...args);
+            const result = await fn(...args)
             data.value = result
+            for (const cb of onSuccessListeners) cb(result)
             return result
         } catch (e) {
             error.value = toAppError(e)
+            status.value = "error"
+            for (const cb of onErrorListeners) cb(error.value)
         } finally {
-            loading.value = false
+            status.value = "ready";
         }
     }
 
-    return { data, loading, error, execute }
+    return {
+        data,
+        status,
+        error,
+        isLoading,
+        isError,
+        isReady,
+        onError,
+        onSuccess,
+        execute,
+    }
 }
