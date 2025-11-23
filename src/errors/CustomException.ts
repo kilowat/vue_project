@@ -1,5 +1,7 @@
-export abstract class CustomException {
-    constructor(public original: unknown) { }
+export abstract class CustomException extends Error {
+    constructor(public original: unknown) {
+        super();
+    }
 
     abstract getMessage(): string;
 }

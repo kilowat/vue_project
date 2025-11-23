@@ -10,21 +10,57 @@ export class AppError extends Error {
         super(message);
         this.name = 'AppError';
     }
-    static from(error: unknown): AppError | never {
+
+    private static _getClientMessage(error: unknown): string | null {
+        // 1. Проверяем CustomException (FetchCategoriesException и т.д.)
         if (error instanceof CustomException) {
-            return new AppError(error.getMessage(), error.original);
+            return error.getMessage();
         }
+
+        // 2. Проверяем ApiClientError
         if (error instanceof ApiClientError) {
-            //if (error.status === 401) throw new UnauthorizedError(error); 
-            return new AppError(error.message, error.original);
+            // Можно добавить специфичные сообщения по статусам
+            switch (error.status) {
+                case 401:
+                    return 'Необходима авторизация';
+                case 403:
+                    return 'Доступ запрещён';
+                case 404:
+                    return 'Ресурс не найден';
+                case 500:
+                case 502:
+                case 503:
+                    return 'Сервер недоступен';
+                default:
+                    return error.message;
+            }
         }
-        // Здесь через if можно будет разные сообщение замутить
-        return new AppError('Произошла непредвиденная ошибка.', error);
+
+        // 3. Можно добавить проверку на сетевые ошибки
+        if (error instanceof TypeError) {
+            return 'Неверный формат данных';
+        }
+
+        // 4. Нет специфичного сообщения
+        return null;
     }
 
     static throw(error: unknown): never {
-        logError(error);
-        throw AppError.from(error);
+        // Получаем оригинальную ошибку (разворачиваем CustomException)
+        const original = error instanceof CustomException ? error.original : error;
+
+        // Пытаемся получить сообщение
+        let message = this._getClientMessage(error); // передаём error, а не original!
+
+        // Если не нашли - дефолтное сообщение
+        if (message === null) {
+            message = 'Произошла непредвиденная ошибка';
+        }
+
+        // Логируем оригинальную ошибку
+        logError(original);
+
+        // Бросаем AppError
+        throw new AppError(message, original);
     }
 }
-

@@ -31,7 +31,7 @@ export function useRequest<F extends (...args: any[]) => Promise<any>>(
         return unsubscribe
     }
 
-    function onError(cb: (err: AppError) => void) {
+    function onError(cb: (err: unknown) => void) {
         onErrorListeners.add(cb)
         const unsubscribe = () => onErrorListeners.delete(cb)
         onScopeDispose(unsubscribe)
@@ -53,13 +53,9 @@ export function useRequest<F extends (...args: any[]) => Promise<any>>(
             for (const cb of onSuccessListeners) cb(result)
             return result
         } catch (e) {
-            if (e instanceof AppError) {
-                error.value = e;
-                status.value = "error"
-                for (const cb of onErrorListeners) cb(error.value)
-            } else {
-                throw e;
-            }
+            error.value = e as AppError;
+            status.value = "error"
+            for (const cb of onErrorListeners) cb(error.value)
 
 
         } finally {
