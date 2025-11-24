@@ -12,7 +12,11 @@ export const getPost = async () => {
 }
 
 export const createPost = async (title: string) => {
-    //todo
+    return await apiCall({
+        call: () => apiClient.get('todos/122'),
+        map: postMapper.fromResponse,
+        error: (e) => new PostError(e)
+    });
 }
 
 export const postMapper = {

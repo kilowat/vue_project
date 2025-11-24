@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import type { Post } from '@/types/post';
-import {  getPost } from '@/api/post';
+import {createPost,getPost } from '@/api/post';
 import type { PostError } from '@/errors/PostError';
+import { useApi } from '@/composable/useApi';
 
 const post = ref<Post | null>(null);
 const error = ref<PostError | null>(null);
@@ -12,7 +13,6 @@ onMounted(async () => {
   isLoading.value = true;
   const result = await getPost();
   isLoading.value = false;
-
   if (result.success) {
     post.value = result.data;
   } else {
