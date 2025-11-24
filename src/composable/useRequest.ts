@@ -1,76 +1,36 @@
-import { ref, computed, onScopeDispose } from "vue";
-import type { Result } from "@/utils/client";
+// composables/useRequest.ts
+import { ref } from 'vue';
+import type { Result } from '@/utils/client';
 
-export type RequestStatus = "initial" | "loading" | "ready" | "error";
+export function useRequest<F extends (...args: any) => Promise<Result<any, any>>>(fn: F) {
+    type FnResult = Awaited<ReturnType<F>>;
+    type Data = FnResult extends { success: true; data: infer D } ? D : never;
+    type Err = FnResult extends { success: false; error: infer E } ? E : never;
 
+    const data = ref<Data | null>(null);
+    const error = ref<Err | null>(null);
+    const isLoading = ref(false);
 
-type AwaitedReturn<F> = Awaited<ReturnType<F>>;
-type ResultSuccess<R> = R extends { success: true; data: infer T } ? T : never;
-type ResultError<R> = R extends { success: false; error: infer E } ? E : never;
-
-
-export function useRequest<F extends (...args: any[]) => Promise<Result<any, any>>>(
-    fn: F
-) {
-    type RawResult = AwaitedReturn<F>;
-    type DataT = ResultSuccess<RawResult>;
-    type ErrorT = ResultError<RawResult>;
-
-    const data = ref<DataT | null>(null);
-    const error = ref<ErrorT | null>(null);
-    const status = ref<RequestStatus>("initial");
-
-    const isLoading = computed(() => status.value === "loading");
-    const isError = computed(() => status.value === "error");
-    const isReady = computed(() => status.value === "ready");
-
-    const onSuccessListeners = new Set<(data: DataT) => void>();
-    const onErrorListeners = new Set<(err: ErrorT) => void>();
-
-    function onSuccess(cb: (data: DataT) => void) {
-        onSuccessListeners.add(cb);
-        const unsubscribe = () => onSuccessListeners.delete(cb);
-        onScopeDispose(unsubscribe);
-        return unsubscribe;
-    }
-
-    function onError(cb: (err: ErrorT) => void) {
-        onErrorListeners.add(cb);
-        const unsubscribe = () => onErrorListeners.delete(cb);
-        onScopeDispose(unsubscribe);
-        return unsubscribe;
-    }
-
-    const execute = async (...args: Parameters<F>) => {
-        if (isLoading.value) return;
-
-        status.value = "loading";
+    async function execute(...args: Parameters<F>) {
+        isLoading.value = true;
         error.value = null;
 
         const result = await fn(...args);
+        isLoading.value = false;
 
         if (result.success) {
             data.value = result.data;
-            for (const cb of onSuccessListeners) cb(result.data);
-            status.value = "ready";
-            return result.data;
         } else {
             error.value = result.error;
-            status.value = "error";
-            for (const cb of onErrorListeners) cb(result.error);
-            return null;
         }
-    };
+
+        return result; // тоже типизировано
+    }
 
     return {
         data,
         error,
-        status,
         isLoading,
-        isError,
-        isReady,
-        onSuccess,
-        onError,
         execute,
     };
 }

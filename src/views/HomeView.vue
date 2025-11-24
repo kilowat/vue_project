@@ -1,38 +1,28 @@
-
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, watchEffect } from 'vue';
-import * as postAPI from '@/api/post';
-import { useRequest } from '@/composable/useRequest';
+import { ref, onMounted } from 'vue';
+import type { Post } from '@/types/post';
+import {  getPost } from '@/api/post';
+import type { PostError } from '@/errors/PostError';
 
+const post = ref<Post | null>(null);
+const error = ref<PostError | null>(null);
+const isLoading = ref(false);
 
-const { 
-  data: post, 
-  isLoading, 
-  execute: fetchPost,
-  error,
-  onError
-} = useRequest(postAPI.getPost);
+onMounted(async () => {
+  isLoading.value = true;
+  const result = await getPost();
+  isLoading.value = false;
 
-//onError((error)=>{ console.log(error) })
-
-onMounted(()=> {
-
-  fetchPost();
-})
-
+  if (result.success) {
+    post.value = result.data;
+  } else {
+    error.value = result.error;
+  }
+});
 </script>
 
 <template>
-  <h1>You did it!</h1>
-  {{ error}}
-  <div v-if="isLoading">...Загрузка</div>
-
-  <div v-if="post">
-    {{ JSON.stringify(post) }}
-  </div>
-  
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <div v-if="isLoading">Загрузка...</div>
+  <div v-if="error">{{ error.getMessage() }}</div>
+  <div v-if="post">{{ post.id }}</div>
 </template>

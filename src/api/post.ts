@@ -1,16 +1,7 @@
-import { AppError } from "@/errors/AppError";
+import { PostError } from "@/errors/PostError";
 import type { Post } from "@/types/post";
 import { apiCall, apiClient } from "@/utils/client";
 
-interface PostResponse {
-    id: string
-}
-
-class PostError extends AppError {
-    getMessage(): string {
-        return "Post error";
-    }
-}
 
 export const getPost = async () => {
     return await apiCall({
@@ -25,5 +16,5 @@ export const createPost = async (title: string) => {
 }
 
 export const postMapper = {
-    fromResponse: (raw: any): Post => ({ id: raw.test.id }),
+    fromResponse: (raw: any): Post => ({ id: raw.id }),
 };

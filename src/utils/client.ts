@@ -56,23 +56,23 @@ export class ApiClient {
         });
     };
 
-    get<T>(url: string, params?: Record<string, any>) {
+    get<T = any>(url: string, params?: Record<string, any>) {
         return this.exec<T>(this.client.get(url, { searchParams: params }));
     }
 
-    post<T>(url: string, body?: any) {
+    post<T = any>(url: string, body?: any) {
         return this.exec<T>(this.client.post(url, { json: body }));
     }
 
-    put<T>(url: string, body?: any) {
+    put<T = any>(url: string, body?: any) {
         return this.exec<T>(this.client.put(url, { json: body }));
     }
 
-    patch<T>(url: string, body?: any) {
+    patch<T = any>(url: string, body?: any) {
         return this.exec<T>(this.client.patch(url, { json: body }));
     }
 
-    delete<T>(url: string) {
+    delete<T = any>(url: string) {
         return this.exec<T>(this.client.delete(url));
     }
 
