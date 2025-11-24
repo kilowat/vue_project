@@ -1,5 +1,4 @@
 import { AppError } from "@/errors/AppError";
-import { CustomException } from "@/errors/CustomException";
 import type { Post } from "@/types/post";
 import { apiClient } from "@/utils/client";
 
@@ -14,12 +13,9 @@ class PostException extends CustomException {
 }
 
 export const getPost = async () => {
-    try {
-        const data = await apiClient.get<PostResponse>('todos/122');
-        return postMapper.fromResponse(data);
-    } catch (e) {
-        AppError.throw(new PostException(e));
-    }
+    const data = await apiClient.get<PostResponse>('todos/122');
+    return postMapper.fromResponse(data);
+
 }
 
 

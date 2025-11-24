@@ -1,6 +1,6 @@
 import { ApiClientError } from "@/utils/client";
 import { logError } from "@/utils/errorLogger";
-import { CustomException } from "./CustomException";
+import { CustomError } from "./CustomError";
 
 export class AppError extends Error {
     constructor(
@@ -13,7 +13,7 @@ export class AppError extends Error {
 
     private static _getClientMessage(error: unknown): string | null {
         // 1. Проверяем CustomException (FetchCategoriesException и т.д.)
-        if (error instanceof CustomException) {
+        if (error instanceof CustomError) {
             return error.getMessage();
         }
 
@@ -47,7 +47,7 @@ export class AppError extends Error {
 
     static throw(error: unknown): never {
         // Получаем оригинальную ошибку (разворачиваем CustomException)
-        const original = error instanceof CustomException ? error.original : error;
+        const original = error instanceof CustomError ? error.original : error;
 
         // Пытаемся получить сообщение
         let message = this._getClientMessage(error); // передаём error, а не original!

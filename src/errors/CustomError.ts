@@ -1,4 +1,4 @@
-export abstract class CustomException extends Error {
+export abstract class CustomError extends Error {
     constructor(public readonly original: unknown) {
         super();
         this.name = this.constructor.name;

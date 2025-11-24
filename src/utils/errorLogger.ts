@@ -1,4 +1,4 @@
-import { CustomException } from "@/errors/CustomException";
+import { CustomException } from "@/errors/CustomError";
 import { ApiClientError } from "./client";
 
 export function logError(error: unknown) {
