@@ -1,5 +1,3 @@
-import { CustomException } from "@/errors/CustomError";
-import { ApiClientError } from "./client";
 
 export function logError(error: unknown) {
     console.error('[App Error]:', error);

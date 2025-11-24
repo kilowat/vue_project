@@ -1,5 +1,7 @@
 import ky, { HTTPError } from 'ky';
 import type { KyInstance } from 'ky';
+import { logError } from './errorLogger';
+
 
 export class ApiClientError extends Error {
     status?: number;
@@ -13,7 +15,6 @@ export class ApiClientError extends Error {
         this.original = params.original;
     }
 }
-
 
 export class ApiClient {
     constructor(private client: KyInstance) { }
@@ -114,6 +115,37 @@ export class ApiClient {
 }
 
 
+export type Result<T, E> =
+    | { success: true; data: T }
+    | { success: false; error: E };
+
+export interface ApiCallOptions<Raw, Mapped, Err> {
+    call: () => Promise<Raw>;
+    map?: (raw: Raw) => Mapped;
+    error?: (error: unknown) => Err;
+}
+
+export async function apiCall<Raw, Mapped = Raw, Err = unknown>(
+    options: ApiCallOptions<Raw, Mapped, Err>
+): Promise<Result<Mapped, Err>> {
+    try {
+        const raw = await options.call();
+
+        const mapped = options.map ? options.map(raw) : (raw as unknown as Mapped);
+
+        return {
+            success: true,
+            data: mapped,
+        };
+    } catch (e) {
+        const error = options.error ? options.error(e) : (e as Err);
+        logError(error);
+        return {
+            success: false,
+            error,
+        };
+    }
+}
 
 export const apiClient = new ApiClient(
     ky.create({

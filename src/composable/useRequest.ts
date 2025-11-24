@@ -1,77 +1,76 @@
-import { ref, computed, onScopeDispose } from "vue"
-import { AppError } from "@/errors/AppError"
+import { ref, computed, onScopeDispose } from "vue";
+import type { Result } from "@/utils/client";
 
-export type RequestStatus =
-    | "initial"
-    | "loading"
-    | "ready"
-    | "error"
+export type RequestStatus = "initial" | "loading" | "ready" | "error";
 
-export function useRequest<F extends (...args: any[]) => Promise<any>>(
-    fn: F,
+
+type AwaitedReturn<F> = Awaited<ReturnType<F>>;
+type ResultSuccess<R> = R extends { success: true; data: infer T } ? T : never;
+type ResultError<R> = R extends { success: false; error: infer E } ? E : never;
+
+
+export function useRequest<F extends (...args: any[]) => Promise<Result<any, any>>>(
+    fn: F
 ) {
-    type Result = Awaited<ReturnType<F>>
+    type RawResult = AwaitedReturn<F>;
+    type DataT = ResultSuccess<RawResult>;
+    type ErrorT = ResultError<RawResult>;
 
-    const data = ref<Result | null>(null)
-    const status = ref<RequestStatus>("initial")
-    const error = ref<AppError | null>(null)
+    const data = ref<DataT | null>(null);
+    const error = ref<ErrorT | null>(null);
+    const status = ref<RequestStatus>("initial");
 
-    const isLoading = computed(() => status.value === "loading")
-    const isError = computed(() => status.value === "error")
-    const isReady = computed(() => status.value === "ready")
+    const isLoading = computed(() => status.value === "loading");
+    const isError = computed(() => status.value === "error");
+    const isReady = computed(() => status.value === "ready");
 
-    const onSuccessListeners = new Set<(data: Result) => void>()
-    const onErrorListeners = new Set<(err: AppError) => void>()
+    const onSuccessListeners = new Set<(data: DataT) => void>();
+    const onErrorListeners = new Set<(err: ErrorT) => void>();
 
-    function onSuccess(cb: (data: Result) => void) {
-        onSuccessListeners.add(cb)
-        const unsubscribe = () => onSuccessListeners.delete(cb)
-        onScopeDispose(unsubscribe)
-
-        return unsubscribe
+    function onSuccess(cb: (data: DataT) => void) {
+        onSuccessListeners.add(cb);
+        const unsubscribe = () => onSuccessListeners.delete(cb);
+        onScopeDispose(unsubscribe);
+        return unsubscribe;
     }
 
-    function onError(cb: (err: unknown) => void) {
-        onErrorListeners.add(cb)
-        const unsubscribe = () => onErrorListeners.delete(cb)
-        onScopeDispose(unsubscribe)
-
-        return unsubscribe
+    function onError(cb: (err: ErrorT) => void) {
+        onErrorListeners.add(cb);
+        const unsubscribe = () => onErrorListeners.delete(cb);
+        onScopeDispose(unsubscribe);
+        return unsubscribe;
     }
-
 
     const execute = async (...args: Parameters<F>) => {
         if (isLoading.value) return;
 
-        status.value = "loading"
-        error.value = null
+        status.value = "loading";
+        error.value = null;
 
-        try {
-            const result = await fn(...args)
+        const result = await fn(...args);
 
-            data.value = result
-            for (const cb of onSuccessListeners) cb(result)
-            return result
-        } catch (e) {
-            error.value = e as AppError;
-            status.value = "error"
-            for (const cb of onErrorListeners) cb(error.value)
-
-
-        } finally {
+        if (result.success) {
+            data.value = result.data;
+            for (const cb of onSuccessListeners) cb(result.data);
             status.value = "ready";
+            return result.data;
+        } else {
+            error.value = result.error;
+            status.value = "error";
+            for (const cb of onErrorListeners) cb(result.error);
+            return null;
         }
-    }
+    };
 
     return {
         data,
-        status,
         error,
+        status,
         isLoading,
         isError,
         isReady,
-        onError,
         onSuccess,
+        onError,
         execute,
-    }
+    };
 }

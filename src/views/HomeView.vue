@@ -24,7 +24,7 @@ onMounted(()=> {
 
 <template>
   <h1>You did it!</h1>
-  {{ error?.message}}
+  {{ error}}
   <div v-if="isLoading">...Загрузка</div>
 
   <div v-if="post">

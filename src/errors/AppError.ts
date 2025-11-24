@@ -1,66 +1,17 @@
-import { ApiClientError } from "@/utils/client";
-import { logError } from "@/utils/errorLogger";
-import { CustomError } from "./CustomError";
+export abstract class AppError extends Error {
+    constructor(public readonly original: unknown) {
+        super();
+        this.name = this.constructor.name;
+        this.message = this.getMessage();
 
-export class AppError extends Error {
-    constructor(
-        message: string,
-        public readonly original: unknown,
-    ) {
-        super(message);
-        this.name = 'AppError';
+        // Добавляем original в стек (опционально)
+        if (original instanceof Error && original.stack) {
+            this.stack = `${this.stack}\n\nCaused by: ${original.stack}`;
+        }
+
+        Object.setPrototypeOf(this, new.target.prototype);
+
     }
 
-    private static _getClientMessage(error: unknown): string | null {
-        // 1. Проверяем CustomException (FetchCategoriesException и т.д.)
-        if (error instanceof CustomError) {
-            return error.getMessage();
-        }
-
-        // 2. Проверяем ApiClientError
-        if (error instanceof ApiClientError) {
-            // Можно добавить специфичные сообщения по статусам
-            switch (error.status) {
-                case 401:
-                    return 'Необходима авторизация';
-                case 403:
-                    return 'Доступ запрещён';
-                case 404:
-                    return 'Ресурс не найден';
-                case 500:
-                case 502:
-                case 503:
-                    return 'Сервер недоступен';
-                default:
-                    return error.message;
-            }
-        }
-
-        // 3. Можно добавить проверку на сетевые ошибки
-        if (error instanceof TypeError) {
-            return 'Неверный формат данных';
-        }
-
-        // 4. Нет специфичного сообщения
-        return null;
-    }
-
-    static throw(error: unknown): never {
-        // Получаем оригинальную ошибку (разворачиваем CustomException)
-        const original = error instanceof CustomError ? error.original : error;
-
-        // Пытаемся получить сообщение
-        let message = this._getClientMessage(error); // передаём error, а не original!
-
-        // Если не нашли - дефолтное сообщение
-        if (message === null) {
-            message = 'Произошла непредвиденная ошибка';
-        }
-
-        // Логируем оригинальную ошибку
-        logError(error);
-
-        // Бросаем AppError
-        throw new AppError(message, original);
-    }
+    abstract getMessage(): string;
 }
