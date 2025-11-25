@@ -7,7 +7,6 @@ type AnyFn = (...args: any[]) => Promise<Result<any, any>>;
 export function useApi<Fns extends Record<string, AnyFn>>(fns: Fns) {
     const isLoading = ref(false);
 
-    // Автоматически создаём refs под каждый ключ (get, create, delete…)
     const data = {} as {
         [K in keyof Fns]: Ref<
             Awaited<ReturnType<Fns[K]>> extends { success: true; data: infer D }
@@ -31,7 +30,6 @@ export function useApi<Fns extends Record<string, AnyFn>>(fns: Fns) {
         error[key] = ref(null);
     }
 
-    // Генерация исполняющих функций
     const actions = {} as {
         [K in keyof Fns]: (...args: Parameters<Fns[K]>) => Promise<ReturnType<Fns[K]>>
     };
@@ -40,7 +38,6 @@ export function useApi<Fns extends Record<string, AnyFn>>(fns: Fns) {
         //@ts-ignore
         actions[key] = async (...args: any[]) => {
             if (isLoading.value) {
-                // Запрещаем повторный вызов
                 return Promise.reject(new Error('Request already in progress'));
             }
 
@@ -67,6 +64,6 @@ export function useApi<Fns extends Record<string, AnyFn>>(fns: Fns) {
         isLoading,
         data,
         error,
-        ...actions, // удобный экспорт: get(), update(), remove(), etc
+        ...actions,
     };
 }

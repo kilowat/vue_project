@@ -2,7 +2,6 @@ import ky, { HTTPError } from 'ky';
 import type { KyInstance } from 'ky';
 import { logError } from './errorLogger';
 
-
 export class ApiClientError extends Error {
     status?: number;
     body?: unknown;
@@ -27,6 +26,7 @@ export class ApiClient {
             return await this.handleError(error);
         }
     }
+
     private async handleError(error: unknown): Promise<never> {
         if (error instanceof HTTPError) {
             const status = error.response.status;
@@ -46,15 +46,11 @@ export class ApiClient {
             });
         }
 
-        if (error instanceof SyntaxError) {
-            throw error;
-        }
-
         throw new ApiClientError({
-            message: 'Network/unknown error',
+            message: 'Unknown error',
             original: error,
         });
-    };
+    }
 
     get<T = any>(url: string, params?: Record<string, any>) {
         return this.exec<T>(this.client.get(url, { searchParams: params }));
@@ -75,76 +71,35 @@ export class ApiClient {
     delete<T = any>(url: string) {
         return this.exec<T>(this.client.delete(url));
     }
-
-    upload<T>(
-        url: string,
-        file: File | Blob,
-        fieldName = "file",
-        extra?: Record<string, any>,
-        onProgress?: (progress: { percent: number; transferred: number; total?: number }) => void,
-    ) {
-        const fd = new FormData();
-        fd.append(fieldName, file);
-
-        if (extra) {
-            for (const [k, v] of Object.entries(extra)) {
-                fd.append(k, v as any);
-            }
-        }
-
-        return this.exec<T>(
-            this.client.post(url, {
-                body: fd,
-                hooks: {
-                    beforeRequest: [],
-                    beforeRetry: [],
-                    afterResponse: [],
-                },
-                onUploadProgress: onProgress
-                    ? (progress) => {
-                        onProgress({
-                            percent: progress.percent,
-                            transferred: progress.transferredBytes,
-                            total: progress.totalBytes,
-                        });
-                    }
-                    : undefined
-            })
-        );
-    }
 }
-
 
 export type Result<T, E> =
     | { success: true; data: T }
     | { success: false; error: E };
 
 export interface ApiCallOptions<Raw, Mapped, Err> {
-    call: () => Promise<Raw>;
+    call: (client: ApiClient) => Promise<Raw>;
     map?: (raw: Raw) => Mapped;
-    error?: (error: unknown) => Err;
+    error?: (error: ApiClientError) => Err;
 }
 
-export async function apiCall<Raw, Mapped = Raw, Err = unknown>(
-    options: ApiCallOptions<Raw, Mapped, Err>
-): Promise<Result<Mapped, Err>> {
-    try {
-        const raw = await options.call();
 
-        const mapped = options.map ? options.map(raw) : (raw as unknown as Mapped);
+export function createApiCall(client: ApiClient, logger?: (e: any) => void) {
+    return async function apiCall<Raw, Mapped = Raw, Err = ApiClientError>(
+        options: ApiCallOptions<Raw, Mapped, Err>
+    ): Promise<Result<Mapped, Err>> {
+        try {
+            const raw = await options.call(client);
+            const mapped = options.map ? options.map(raw) : (raw as Mapped);
 
-        return {
-            success: true,
-            data: mapped,
-        };
-    } catch (e) {
-        const error = options.error ? options.error(e) : (e as Err);
-        logError(error);
-        return {
-            success: false,
-            error,
-        };
-    }
+            return { success: true, data: mapped };
+        } catch (e) {
+            const err = options.error ? options.error(e as ApiClientError) : (e as Err);
+            if (logger) logger(err);
+
+            return { success: false, error: err };
+        }
+    };
 }
 
 export const apiClient = new ApiClient(
@@ -153,3 +108,6 @@ export const apiClient = new ApiClient(
         headers: { 'Content-Type': 'application/json' },
     })
 );
+
+
+export const apiCall = createApiCall(apiClient, logError);
