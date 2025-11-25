@@ -7,7 +7,9 @@ export const getPost = async () => {
     return await apiCall({
         call: (api) => api.get('todos/122'),
         map: postMapper.fromResponse,
-        error: (e) => new PostError(e)
+        error: (e) => {
+            return new PostError(e)
+        }
     });
 }
 

@@ -46,10 +46,7 @@ export class ApiClient {
             });
         }
 
-        throw new ApiClientError({
-            message: 'Unknown error',
-            original: error,
-        });
+        throw error;
     }
 
     get<T = any>(url: string, params?: Record<string, any>) {
@@ -80,12 +77,12 @@ export type Result<T, E> =
 export interface ApiCallOptions<Raw, Mapped, Err> {
     call: (client: ApiClient) => Promise<Raw>;
     map?: (raw: Raw) => Mapped;
-    error?: (error: ApiClientError) => Err;
+    error?: (error: unknown) => Err;
 }
 
 
 export function createApiCall(client: ApiClient, logger?: (e: any) => void) {
-    return async function apiCall<Raw, Mapped = Raw, Err = ApiClientError>(
+    return async function apiCall<Raw, Mapped = Raw, Err = unknown>(
         options: ApiCallOptions<Raw, Mapped, Err>
     ): Promise<Result<Mapped, Err>> {
         try {
@@ -94,7 +91,13 @@ export function createApiCall(client: ApiClient, logger?: (e: any) => void) {
 
             return { success: true, data: mapped };
         } catch (e) {
-            const err = options.error ? options.error(e as ApiClientError) : (e as Err);
+
+            const originalError = e as Error;
+
+            const err = options.error
+                ? options.error(originalError as any)
+                : (originalError as Err);
+
             if (logger) logger(err);
 
             return { success: false, error: err };
