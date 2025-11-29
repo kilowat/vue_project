@@ -1,6 +1,5 @@
 import ky, { HTTPError } from 'ky';
 import type { KyInstance } from 'ky';
-import { logError } from './errorLogger';
 
 export class ApiClientError extends Error {
     status?: number;
