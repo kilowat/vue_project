@@ -6,7 +6,6 @@ import { apiClient } from "@/utils/client";
 
 export const fetchPost = async (id: string) => {
     try {
-        throw new Error('my error');
         const data = await apiClient.get(`todos/${id}`);
         return postMapper.fromResponse(data);
     } catch (e) {
