@@ -1,8 +1,10 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { VueQueryPlugin } from '@tanstack/vue-query'
+import { QueryClient, VueQueryPlugin, type VueQueryPluginOptions } from '@tanstack/vue-query'
 import App from './App.vue'
 import router from './router'
+import { AppError } from './errors/AppError'
+import { logError } from './utils/errorLogger'
 
 const app = createApp(App)
 
@@ -25,7 +27,25 @@ app.config.errorHandler = (err, instance, info) => {
 }
 
 
-app.use(VueQueryPlugin)
+
+const vueQueryPluginOptions: VueQueryPluginOptions = {
+    queryClient: new QueryClient({
+
+        defaultOptions: {
+            queries: {
+                retry: false,
+                throwOnError(error, query) {
+                    logError(error);
+                    if (error instanceof AppError) {
+                        return false;
+                    }
+                    return true;
+                },
+            }
+        },
+    }),
+}
+app.use(VueQueryPlugin, vueQueryPluginOptions)
 
 app.use(createPinia())
 app.use(router)
