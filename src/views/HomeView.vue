@@ -1,28 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import type { Post } from '@/types/post';
-import {createPost,getPost } from '@/api/post';
-import type { PostError } from '@/errors/PostError';
-import { useApi } from '@/composable/useApi';
 
-const post = ref<Post | null>(null);
-const error = ref<PostError | null>(null);
-const isLoading = ref(false);
+import { usePost } from '@/composable/usePost';
 
-onMounted(async () => {
-  isLoading.value = true;
-  const result = await getPost();
-  isLoading.value = false;
-  if (result.success) {
-    post.value = result.data;
-  } else {
-    error.value = result.error;
-  }
-});
+const id = ref('12');
+const {data: post, isLoading, error } = usePost(id)
+
 </script>
 
 <template>
   <div v-if="isLoading">Загрузка...</div>
-  <div v-if="error">{{ error.getMessage() }}</div>
+  <div v-if="error">{{ error.message}}</div>
   <div v-if="post">{{ post.id }}</div>
 </template>

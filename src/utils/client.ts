@@ -70,41 +70,6 @@ export class ApiClient {
     }
 }
 
-export type Result<T, E> =
-    | { success: true; data: T }
-    | { success: false; error: E };
-
-export interface ApiCallOptions<Raw, Mapped, Err> {
-    call: (client: ApiClient) => Promise<Raw>;
-    map?: (raw: Raw) => Mapped;
-    error?: (error: unknown) => Err;
-}
-
-
-export function createApiCall(client: ApiClient, logger?: (e: any) => void) {
-    return async function apiCall<Raw, Mapped = Raw, Err = unknown>(
-        options: ApiCallOptions<Raw, Mapped, Err>
-    ): Promise<Result<Mapped, Err>> {
-        try {
-            const raw = await options.call(client);
-            const mapped = options.map ? options.map(raw) : (raw as Mapped);
-
-            return { success: true, data: mapped };
-        } catch (e) {
-
-            const originalError = e as Error;
-
-            const err = options.error
-                ? options.error(originalError as any)
-                : (originalError as Err);
-
-            if (logger) logger(err);
-
-            return { success: false, error: err };
-        }
-    };
-}
-
 export const apiClient = new ApiClient(
     ky.create({
         prefixUrl: import.meta.env.API_URL || 'https://jsonplaceholder.typicode.com',
@@ -113,4 +78,3 @@ export const apiClient = new ApiClient(
 );
 
 
-export const apiCall = createApiCall(apiClient, logError);
