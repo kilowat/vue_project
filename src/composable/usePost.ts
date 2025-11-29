@@ -1,7 +1,7 @@
 
 import { fetchPost } from '@/api/post'
 import { useQuery } from '@tanstack/vue-query'
-import { computed, toValue, type MaybeRefOrGetter } from 'vue'
+import { toValue, type MaybeRefOrGetter } from 'vue'
 
 
 export const usePost = (id: MaybeRefOrGetter<string>) => {
