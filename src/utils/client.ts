@@ -4,13 +4,13 @@ import type { KyInstance } from 'ky';
 export class ApiClientError extends Error {
     status?: number;
     body?: unknown;
-    original?: unknown;
+    cause: unknown;
 
-    constructor(params: { message: string; status?: number; body?: unknown; original?: unknown }) {
+    constructor(params: { message: string; status?: number; body?: unknown; cause?: unknown }) {
         super(params.message);
         this.status = params.status;
         this.body = params.body;
-        this.original = params.original;
+        this.cause = params.cause;
     }
 }
 
@@ -21,6 +21,7 @@ export class ApiClient {
         try {
             const response = await request;
             return await response.json() as T;
+
         } catch (error) {
             return await this.handleError(error);
         }
@@ -41,7 +42,7 @@ export class ApiClient {
                 message: `HTTP ${status}`,
                 status,
                 body,
-                original: error,
+                cause: error,
             });
         }
 

@@ -1,17 +1,30 @@
-export abstract class AppError extends Error {
-    constructor(public readonly original: unknown) {
-        super();
-        this.name = this.constructor.name;
+export abstract class AppError<T extends string> extends Error {
+    cause: unknown;
+    name: T;
+    constructor({ name, cause }: { name: T, cause: unknown }) {
+        super("");
+        this.name = name;
+        this.cause = cause;
+
         this.message = this.getMessage();
-
-        // Добавляем original в стек (опционально)
-        if (original instanceof Error && original.stack) {
-            this.stack = `${this.stack}\n\nCaused by: ${original.stack}`;
-        }
-
-        Object.setPrototypeOf(this, new.target.prototype);
-
     }
 
     abstract getMessage(): string;
 }
+
+/*
+export abstract class AppError extends Error {
+  cause: unknown;
+
+  constructor(cause: unknown) {
+    super(""); // зададим message позже
+    this.name = this.constructor.name;
+
+    this.cause = cause; // ← вручную сохраняем cause
+
+    this.message = this.getMessage();
+  }
+
+  abstract getMessage(): string;
+}
+  */

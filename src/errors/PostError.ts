@@ -1,7 +1,14 @@
 import { AppError } from "./AppError";
+export type PostErrorName = 'FETCH_POST' | 'CREATE_POST';
 
-export class PostError extends AppError {
+export class PostError extends AppError<PostErrorName> {
+
     getMessage(): string {
-        return "User frendly error message";
+        switch (this.name) {
+            case 'FETCH_POST': return "Fetch post data error";
+            case 'CREATE_POST': return "Create post data error";
+            default: return "Post uknown Error";
+        }
+
     }
 }

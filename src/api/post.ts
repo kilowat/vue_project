@@ -9,7 +9,7 @@ export const fetchPost = async (id: string) => {
         const data = await apiClient.get(`todos/${id}`);
         return postMapper.fromResponse(data);
     } catch (e) {
-        throw new PostError(e);
+        throw new PostError({ name: "FETCH_POST", cause: e });
     }
 }
 export const postMapper = {
